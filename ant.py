@@ -1,4 +1,5 @@
 import random
+import time
 
 
 class Ant:
@@ -69,6 +70,8 @@ class AntColony:
         self.best_ant = None
         self.pheromones = [[1 for _ in range(number_of_nodes)] for _ in range(number_of_nodes)]
 
+        self.stop_work = False
+
     def create_ants(self, number_of_nodes):
         number_of_ants = int(number_of_nodes * self.ants_multiplayer)
         ants = []
@@ -106,23 +109,21 @@ class AntColony:
         return [self.best_ant.visited_nodes, self.best_ant.get_distance_traveled(nodes)]
 
 
-def start(ant_colony, nodes, number_of_iterations=100):
+def start(ant_colony, nodes, number_of_iterations=100, app_class=None):
     node_len = len(nodes)
     best_route = None
     for i in range(number_of_iterations):
-        try:
-            ant_colony.create_ants(node_len)
-            for j in range(node_len - 1):
-                ant_colony.move_ants(nodes)
-            ant_colony.update_pheromones(nodes)
-            best_route = ant_colony.get_best_route(nodes)
-        except ZeroDivisionError:
-            # print(i)
-            ant_colony.pheromones = [[1 for _ in range(len(nodes))] for _ in range(len(nodes))]
+        time.sleep(1)
+        if ant_colony.stop_work:
+            return None
+        ant_colony.create_ants(node_len)
+        for j in range(node_len - 1):
+            ant_colony.move_ants(nodes)
+        ant_colony.update_pheromones(nodes)
+        best_route = ant_colony.get_best_route(nodes)
 
-    # for row in ant_colony.pheromones:
-    #     print(row)
-
+    if app_class is not None:
+        app_class.best_route, app_class.best_route_length = best_route
     return best_route
 
 

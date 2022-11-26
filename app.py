@@ -1,11 +1,12 @@
 import pygame
+import threading
 from colors import *
 from node import create_random_nodes
 from ant import AntColony, start
 
 
 class App:
-    def __init__(self, weight=840, height=640, starting_node_number=10):
+    def __init__(self, weight=840, height=640, starting_node_number=5):
         self._running = False
         self._display_surf = None
         self.clock = None
@@ -27,6 +28,7 @@ class App:
         self.offset_x = 0
         self.offset_y = 0
 
+        self.iterations = 1000
         self.ants_multiplayer = 0.5
         self.evaporation_rate = 0.4
         self.random_movement_chance = 0.3
@@ -36,6 +38,8 @@ class App:
         self.best_route = None
         self.best_route_length = None
         self.ant_colony = None
+
+        self.ant_colony_thread = None
 
     def _pick_up_node(self, mouse_position):
         for node in self.node_list:
@@ -60,8 +64,21 @@ class App:
         self.moving_node = None
 
     def _get_best_path(self):
-        print(f"Colony at work")
-        self.best_route, self.best_route_length = start(self.ant_colony, self.node_distances, 1000)
+        # or not self.ant_colony_thread.is_alive()
+        if self.ant_colony_thread is None:
+            print(f"Colony at work")
+            self.ant_colony_thread = threading.Thread(target=start,
+                                                      args=(self.ant_colony, self.node_distances,
+                                                            self.iterations, self), daemon=True)
+            self.ant_colony_thread.start()
+        else:
+            print("Kill")
+            self.ant_colony.stop_work = True
+            self.ant_colony_thread.join()
+            self.ant_colony_thread = None
+            self.ant_colony.stop_work = False
+
+
 
     def _draw_fps(self):
         text_surface = self.node_font.render("{:.2f}".format(self.clock.get_fps()), False, READ)
@@ -131,9 +148,11 @@ class App:
         pass
 
     def on_render(self):
+        print(threading.active_count())
         self._display_surf.fill(BACKGROUND_COLOR)
         self._draw_nodes_connections()
-        self._draw_best_rout()
+        if self.best_route is not None:
+            self._draw_best_rout()
         self._draw_nodes()
         self._draw_fps()
 
