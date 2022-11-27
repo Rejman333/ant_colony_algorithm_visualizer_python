@@ -2,19 +2,21 @@ import random
 
 
 class Ant:
-    def __init__(self, number_of_nodes):
-        self.visited_nodes = [random.randint(0, number_of_nodes - 1)]
+    def __init__(self, number_of_nodes, node_list):
+        random_node_id = random.randint(0, number_of_nodes - 1)
+        self.visited_nodes = [random_node_id]
+        self.position = self.x, self.y = node_list[random_node_id].position
+        self.speed = 25.
+        self.changed = False
 
-    def visit_node(self, nodes, pheromones, random_movement_chance, alpha, beta):
-        if random_movement_chance >= random.random():
-            self._visit_random_node(len(nodes))
-        else:
-            self._visit_probabilistically_node(nodes, pheromones, alpha, beta)
+    def change_location(self, new_location):
+        self.position = self.x, self.y = new_location
 
     def _visit_random_node(self, number_of_nodes):
         all_nodes = list(range(number_of_nodes))
         available_nodes = [x for x in all_nodes if x not in self.visited_nodes]
-        self.visited_nodes.append(random.choice(available_nodes))
+        node_id = random.choice(available_nodes)
+        self.visited_nodes.append(node_id)
 
     def _visit_probabilistically_node(self, nodes, pheromones, alfa, beta):
         active_node = self.visited_nodes[-1]
@@ -50,12 +52,34 @@ class Ant:
             if section[1] < random_number <= section[2]:
                 return section
 
+    def visit_node(self, nodes, pheromones, random_movement_chance, alpha, beta):
+        if random_movement_chance >= random.random():
+            self._visit_random_node(len(nodes))
+        else:
+            self._visit_probabilistically_node(nodes, pheromones, alpha, beta)
+
     def get_distance_traveled(self, nodes):
         distance_traveled = 0
         for i in range(1, len(self.visited_nodes)):
             distance_traveled += nodes[self.visited_nodes[i - 1]][self.visited_nodes[i]]
 
         return distance_traveled
+
+    def draw(self, surface, ant_img):
+        rect = ant_img.get_rect()
+        rect.center = self.position
+        surface.blit(ant_img, rect)
+
+    def move_to_node(self, node):
+        dx, dy = (node.x - self.x, node.y - self.y)
+        step_x, step_y = (dx / self.speed, dy / self.speed)
+        self.change_location((self.x + step_x, self.y + step_y))
+
+        if abs(self.x - node.x) < 1 and abs(self.y - node.y) < 1:
+            self.change_location(node.position)
+            return True
+
+        return False
 
 
 class AntColony:
@@ -65,21 +89,25 @@ class AntColony:
         self.random_movement_chance = random_movement_chance
         self.alpha = alpha
         self.beta = beta
+
         self.ants = []
         self.best_ant = None
-        self.pheromones = [[1 for _ in range(number_of_nodes)] for _ in range(number_of_nodes)]
 
-    def create_ants(self, number_of_nodes):
+        self.pheromones = [[1 for _ in range(number_of_nodes)] for _ in range(number_of_nodes)]
+        self.stop_work = False
+        self.ant_m = 1
+
+    def create_ants(self, number_of_nodes, node_list):
         number_of_ants = int(number_of_nodes * self.ants_multiplayer)
         ants = []
         for i in range(number_of_ants):
-            ants.append(Ant(number_of_nodes))
+            ants.append(Ant(number_of_nodes, node_list))
 
         self.ants = ants
 
-    def move_ants(self, nodes):
+    def move_ants(self, node_list):
         for ant in self.ants:
-            ant.visit_node(nodes, self.pheromones, self.random_movement_chance, self.alpha, self.beta)
+            ant.visit_node(node_list, self.pheromones, self.random_movement_chance, self.alpha, self.beta)
 
     def update_pheromones(self, nodes):
         number_of_nodes = len(nodes)
@@ -105,34 +133,36 @@ class AntColony:
 
         return [self.best_ant.visited_nodes, self.best_ant.get_distance_traveled(nodes)]
 
+    def draw_ants(self, surface, ant_img):
+        for ant in self.ants:
+            ant.draw(surface, ant_img)
 
-def start(ant_colony, nodes, number_of_iterations=100):
-    node_len = len(nodes)
-    best_route = None
-    for i in range(number_of_iterations):
-        try:
-            ant_colony.create_ants(node_len)
-            for j in range(node_len - 1):
-                ant_colony.move_ants(nodes)
-            ant_colony.update_pheromones(nodes)
-            best_route = ant_colony.get_best_route(nodes)
-        except ZeroDivisionError:
-            # print(i)
-            ant_colony.pheromones = [[1 for _ in range(len(nodes))] for _ in range(len(nodes))]
+    def move_ants_on_screen(self, node_list):
+        ants_not_moving = True
+        for ant in self.ants:
+            node_id = ant.visited_nodes[self.ant_m]
+            node = node_list[node_id]
+            stop_moving = ant.move_to_node(node)
+            if stop_moving is False:
+                ants_not_moving = False
 
-    # for row in ant_colony.pheromones:
-    #     print(row)
+        if ants_not_moving is True and self.ant_m < len(node_list) - 1:
+            self.ant_m += 1
+            return False
+        return ants_not_moving
 
-    return best_route
+    def iterate(self, node_distances, node_list):
+        self.ant_m = 1
+        node_len = len(node_distances)
+        if self.stop_work:
+            return None
+        self.create_ants(node_len, node_list)
+        for j in range(node_len - 1):
+            self.move_ants(node_distances)
+        self.update_pheromones(node_distances)
+
+        return self.pheromones
 
 
 if __name__ == '__main__':
-    my_nodes = [[0, 8, 7, 4, 6, 4],
-                [8, 0, 5, 7, 11, 5],
-                [7, 5, 0, 9, 6, 7],
-                [4, 7, 9, 0, 5, 6],
-                [6, 11, 6, 5, 0, 3],
-                [4, 5, 6, 6, 3, 0]]
-
-    my_ant_colony = AntColony(len(my_nodes), 0.5, 0.4, 0.3, 2, 3)
-    print(start(my_ant_colony, my_nodes, 1000))
+    pass

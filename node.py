@@ -20,7 +20,9 @@ class Node:
         node_text = self.font.render(f"{self.id}", False, self.font_color)
         surface.blit(node_text, node_text.get_rect(center=self.position))
 
-    def draw_line(self, surface, node, node_distances, line_color, line_thickness, line_font, line_font_color):
+    def draw_line(self, surface, node, node_distances, line_color, line_thickness, line_font,
+                  line_font_color):
+
         distance = node_distances[self.id][node.id]
         draw.line(surface, line_color, self.position, node.position, line_thickness)
 
