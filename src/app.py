@@ -29,7 +29,7 @@ class App:
         self.offset_y = 0
 
         self.iterations = 3
-        self.current_iteration = 1
+        self.current_iteration = 0
         self.ants_multiplayer = 0.5
         self.evaporation_rate = 0.4
         self.random_movement_chance = 0.3
@@ -41,7 +41,7 @@ class App:
         self.ant_colony = None
         self.ant_colony_thread = None
 
-        self.ant_img = pygame.image.load(os.path.join("ant.png"))
+        self.ant_img = pygame.image.load(os.path.join("../ant.png"))
 
         self.simulate_ants = False
         self.ants_not_moving = True
@@ -77,7 +77,7 @@ class App:
 
         self.simulate_ants = True
         self.ants_not_moving = True
-        self.current_iteration = 1
+        self.current_iteration = 0
 
     def _stop_simulation(self):
         print("Stopped simulation!")
