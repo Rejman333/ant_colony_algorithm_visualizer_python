@@ -16,5 +16,8 @@ The ACO algorithm mimics the way ants search for paths. Each ant in the simulati
 - **Python 3.x** is required to run the project.
 - Ensure you have all necessary Python packages installed. You can install dependencies using `pip`:
 
+### Controls
+- **s** to start, or restart simulation.
+- **spacebar** to stop simulation.
 ```bash
 pip install -r requirements.txt
